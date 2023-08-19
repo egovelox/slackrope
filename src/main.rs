@@ -12,7 +12,7 @@ mod weechat_hotlist;
 mod weechat_process;
 mod weechat_slack;
 
-use weechat_hotlist::{hotlist, HotlistFlags};
+use weechat_hotlist::{hotlist, clear_hotlist, HotlistFlags};
 use weechat_process::{kill_weechat_processes, print_register_url, WeechatSpawnFailed};
 use weechat_slack::{list_registered_slack_teams, register_slack_token};
 
@@ -25,6 +25,7 @@ fn main() {
         cli::Commands::Kill => fold(kill_weechat_processes(&mut system)),
         cli::Commands::ListTeams => fold(list_registered_slack_teams(&mut system)),
         cli::Commands::Hotlist { format } => fold(hotlist(&system, HotlistFlags { format })),
+        cli::Commands::Clear => fold(clear_hotlist(&system)),
         cli::Commands::Register { token } => match token {
             Some(token) => fold(register_slack_token(&mut system, &token)),
             None => fold(print_register_url()),

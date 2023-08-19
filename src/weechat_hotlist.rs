@@ -6,7 +6,7 @@ pub use crate::weechat_process::{is_weechat_running, spawn_weechat_process};
 use anyhow::Result;
 use log::{debug, info};
 use sysinfo::System;
-use weechat_relay_rs::commands::{Command, InfolistCommand, StrArgument};
+use weechat_relay_rs::commands::{Command, InfolistCommand, StrArgument, InputCommand, PointerOrName};
 use weechat_relay_rs::messages::{InfolistItem, Object, WInfolist};
 use weechat_relay_rs::Connection;
 
@@ -38,6 +38,18 @@ pub fn hotlist(sys: &System, flags: HotlistFlags) -> Result<()> {
             print_detailed_hotlist()? 
         },
     };
+    Ok(())
+}
+
+pub fn clear_hotlist(sys: &System) -> Result<()> {
+    if !is_weechat_running(sys) {
+        debug!("Did not clear hotlist : weechat is currently not running");
+        return Ok(())
+    }
+    let mut connection = init_connection("127.0.0.1:8000", "password")?;
+    debug!("connection initiated");
+    send_clear_hotlist_request(&mut connection)?;
+    debug!("clear hotlist request sent");
     Ok(())
 }
 
@@ -97,6 +109,19 @@ fn send_hotlist_request(connection: &mut Connection) -> Result<()> {
         command: info_command,
     };
     connection.send_command(&info_command)?;
+    Ok(())
+}
+
+fn send_clear_hotlist_request(connection: &mut Connection) -> Result<()> {
+    let input_command = InputCommand::new(
+        PointerOrName::Name(StrArgument::new("core.weechat").unwrap().to_stringargument()),
+        StrArgument::new("/hotlist clear").unwrap().to_stringargument(),
+    );
+    let input_command = Command {
+        id: None,
+        command: input_command,
+    };
+    connection.send_command(&input_command)?;
     Ok(())
 }
 

@@ -36,6 +36,8 @@ pub enum Commands {
         #[arg(short, long, value_name = "TOKEN")]
         token: Option<String>,
     },
+    /// Clear the current hotlist (sets all counters to 0)
+    Clear,
 }
 
 #[derive(ValueEnum, Copy, Clone, Debug, PartialEq, Eq)]
