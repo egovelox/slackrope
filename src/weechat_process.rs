@@ -4,11 +4,14 @@ use std::error;
 use std::fmt;
 use sysinfo::{Process, ProcessExt, System, SystemExt};
 
-fn get_weechat_processes(sys: &System) -> Option<Vec<&Process>> {
+use crate::environment::{get_config, WEECHAT_PROGRAM_NAME};
+
+pub fn get_weechat_processes(sys: &System) -> Option<Vec<&Process>> {
+    let program_name = get_config::<String>(WEECHAT_PROGRAM_NAME);
     let mut vec: Vec<&Process> = Vec::new();
     for process in sys.processes_by_name("weechat") {
         let name = process.name();
-        if name == "weechat" || name == "weechat-headless" {
+        if name == "weechat" || name == program_name {
             vec.push(process);
             debug!(
                 "Found running {} process with pid: {}",
@@ -26,6 +29,7 @@ fn get_weechat_processes(sys: &System) -> Option<Vec<&Process>> {
 
 pub fn kill_weechat_processes(sys: &mut System) -> Result<()> {
     debug!("...kill_weechat_processes ?");
+    sys.refresh_processes();
     if let Some(processes) = get_weechat_processes(sys) {
         for process in processes {
             process.kill();
@@ -41,15 +45,14 @@ pub fn is_weechat_running(sys: &System) -> bool {
 }
 
 pub fn spawn_weechat_process() -> Result<std::process::Child> {
-    let program_name = "weechat-headless";
-    debug!("...spawning {} process", program_name);
-    std::process::Command::new(program_name)
+    let program_name = get_config::<String>(WEECHAT_PROGRAM_NAME);
+
+    debug!("...spawning {} process", &program_name);
+    std::process::Command::new(&program_name)
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
         .spawn()
-        .context(WeechatSpawnFailed {
-            program_name: program_name.to_string(),
-        })
+        .context(WeechatSpawnFailed { program_name })
 }
 
 #[derive(Debug)]
@@ -71,23 +74,4 @@ impl error::Error for WeechatSpawnFailed {
     fn description(&self) -> &str {
         "io-error"
     }
-}
-
-pub fn print_register_url() -> Result<()> {
-    let register_baseurl = "https://slack.com/oauth/authorize";
-    let client_id = "2468770254.51917335286";
-    let scope = "client";
-    let redirect_uri = "https%3A%2F%2Fwee-slack.github.io%2Fwee-slack%2Foauth";
-
-    println!("To register a new slack workspace, please follow this link:");
-    println!();
-    println!(
-        "   {}?client_id={}&scope={}&redirect_uri={}",
-        register_baseurl, client_id, scope, redirect_uri
-    );
-    println!();
-    println!("You should then be able to get a token, and use it to run the command: ");
-    println!();
-    println!("  register --token <TOKEN>");
-    Ok(())
 }

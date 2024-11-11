@@ -1,42 +1,62 @@
 pub use crate::cli::OutputFormat;
 pub use crate::models::{Buffer, Detailed, DetailedHotlist, SimpleHotlist};
-pub use crate::utils::{clean_string, match_string, to_utf8_lossy};
+use crate::utils::sleep;
+pub use crate::utils::{clean_string, match_string};
 pub use crate::weechat_connection::init_connection;
 pub use crate::weechat_process::{is_weechat_running, spawn_weechat_process};
 use anyhow::Result;
 use log::{debug, info};
 use sysinfo::System;
-use weechat_relay_rs::commands::{Command, InfolistCommand, StrArgument, InputCommand, PointerOrName};
+use weechat_relay_rs::commands::{
+    Command, InfolistCommand, InputCommand, PointerOrName, StrArgument,
+};
 use weechat_relay_rs::messages::{InfolistItem, Object, WInfolist};
 use weechat_relay_rs::Connection;
 
 pub struct HotlistFlags {
     pub format: OutputFormat,
+    pub start: bool,
 }
 
 pub fn hotlist(sys: &System, flags: HotlistFlags) -> Result<()> {
+    let is_weechat_running = is_weechat_running(sys);
     match flags.format {
-        OutputFormat::Shell => { 
-            // As this format is to be used by other shell programs,
-            // we don't spawn weechat if it's not currently running
-            if !is_weechat_running(sys) {
+        OutputFormat::Shell => {
+            if !is_weechat_running && !flags.start {
                 println!("-");
-                return Ok(())
+                return Ok(());
             }
-            print_shell_hotlist()? 
-        },
-        OutputFormat::Simple => { 
-            if !is_weechat_running(sys) {
+
+            if !is_weechat_running && flags.start {
                 spawn_weechat_process()?;
+                sleep(2)
             }
-            print_simple_hotlist()? 
-        },
-        OutputFormat::Detailed => { 
-            if !is_weechat_running(sys) {
+            print_shell_hotlist()?
+        }
+        OutputFormat::Simple => {
+            if !is_weechat_running && !flags.start {
+                println!("{{}}");
+                return Ok(());
+            }
+
+            if !is_weechat_running && flags.start {
                 spawn_weechat_process()?;
+                sleep(2)
             }
-            print_detailed_hotlist()? 
-        },
+            print_simple_hotlist()?
+        }
+        OutputFormat::Detailed => {
+            if !is_weechat_running && !flags.start {
+                println!("{{}}");
+                return Ok(());
+            }
+
+            if !is_weechat_running && flags.start {
+                spawn_weechat_process()?;
+                sleep(2)
+            }
+            print_detailed_hotlist()?
+        }
     };
     Ok(())
 }
@@ -44,9 +64,9 @@ pub fn hotlist(sys: &System, flags: HotlistFlags) -> Result<()> {
 pub fn clear_hotlist(sys: &System) -> Result<()> {
     if !is_weechat_running(sys) {
         debug!("Did not clear hotlist : weechat is currently not running");
-        return Ok(())
+        return Ok(());
     }
-    let mut connection = init_connection("127.0.0.1:8000", "password")?;
+    let mut connection = init_connection()?;
     debug!("connection initiated");
     send_clear_hotlist_request(&mut connection)?;
     debug!("clear hotlist request sent");
@@ -54,7 +74,7 @@ pub fn clear_hotlist(sys: &System) -> Result<()> {
 }
 
 fn print_shell_hotlist() -> Result<()> {
-    let mut connection = init_connection("127.0.0.1:8000", "password")?;
+    let mut connection = init_connection()?;
     debug!("connection initiated");
     send_hotlist_request(&mut connection)?;
     debug!("hotlist request sent");
@@ -62,16 +82,15 @@ fn print_shell_hotlist() -> Result<()> {
     debug!("hotlist response received");
 
     let simple_hotlist = build_simple_hotlist(&hotlist)?;
-    println!("{} {} {}", 
-        simple_hotlist.priority_1,
-        simple_hotlist.priority_2,
-        simple_hotlist.priority_3,
+    println!(
+        "{} {} {}",
+        simple_hotlist.priority_1, simple_hotlist.priority_2, simple_hotlist.priority_3,
     );
     Ok(())
 }
 
 fn print_simple_hotlist() -> Result<()> {
-    let mut connection = init_connection("127.0.0.1:8000", "password")?;
+    let mut connection = init_connection()?;
     debug!("connection initiated");
     send_hotlist_request(&mut connection)?;
     debug!("hotlist request sent");
@@ -85,7 +104,7 @@ fn print_simple_hotlist() -> Result<()> {
 }
 
 fn print_detailed_hotlist() -> Result<()> {
-    let mut connection = init_connection("127.0.0.1:8000", "password")?;
+    let mut connection = init_connection()?;
     debug!("connection initiated");
     send_hotlist_request(&mut connection)?;
     debug!("hotlist request sent");
@@ -93,7 +112,7 @@ fn print_detailed_hotlist() -> Result<()> {
     debug!("hotlist response received");
 
     let detailed_hotlist = build_detailed_hotlist(&hotlist)?;
-    let serialized = serde_json::to_string(&detailed_hotlist).unwrap();
+    let serialized = serde_json::to_string_pretty(&detailed_hotlist).unwrap();
     println!("{}", serialized);
     Ok(())
 }
@@ -114,8 +133,15 @@ fn send_hotlist_request(connection: &mut Connection) -> Result<()> {
 
 fn send_clear_hotlist_request(connection: &mut Connection) -> Result<()> {
     let input_command = InputCommand::new(
-        PointerOrName::Name(StrArgument::new("core.weechat").unwrap().to_stringargument()),
-        StrArgument::new("/hotlist clear").unwrap().to_stringargument(),
+        PointerOrName::Name(
+            StrArgument::new("core.weechat")
+                .unwrap()
+                .to_stringargument(),
+        ),
+        // set read marker on all buffers:
+        StrArgument::new("/allbuf /buffer set unread")
+            .unwrap()
+            .to_stringargument(),
     );
     let input_command = Command {
         id: None,

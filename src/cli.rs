@@ -14,10 +14,6 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand)]
 pub enum Commands {
-    /// Kill weechat daemon
-    Kill,
-    /// List registered slack teams
-    ListTeams,
     /// Fetch the current hotlist
     Hotlist {
         #[arg(
@@ -29,22 +25,32 @@ pub enum Commands {
             value_enum
         )]
         format: OutputFormat,
+        /// [default: false] whether the command should start weechat
+        /// (when it's not running)
+        #[arg(short, long, value_name = "START", action)]
+        start: bool,
     },
+    /// Clear the current hotlist (sets all counters to 0)
+    Clear,
+    /// Kill weechat daemon
+    Kill,
+    /// List registered slack teams
+    ListTeams,
     /// Register a new slack team
     Register {
         /// (Optional) use only after you got your token from slack
         #[arg(short, long, value_name = "TOKEN")]
         token: Option<String>,
     },
-    /// Clear the current hotlist (sets all counters to 0)
-    Clear,
+    /// Print health report
+    Health,
 }
 
 #[derive(ValueEnum, Copy, Clone, Debug, PartialEq, Eq)]
 pub enum OutputFormat {
     /// Shell format: text
     Shell,
-    /// Simple format: json
+    /// Shell format: text with icons
     Simple,
     /// Detailed format: json
     Detailed,

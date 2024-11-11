@@ -1,6 +1,7 @@
+pub use crate::environment::get_slack_register_url;
 pub use crate::models::SlackTeam;
 use crate::utils::sleep;
-pub use crate::utils::{clean_string, match_string, to_utf8_lossy};
+pub use crate::utils::{clean_string, match_string};
 pub use crate::weechat_connection::init_connection;
 pub use crate::weechat_process::{is_weechat_running, spawn_weechat_process};
 use anyhow::Result;
@@ -13,23 +14,43 @@ use weechat_relay_rs::commands::{
 use weechat_relay_rs::messages::{InfolistItem, Object, WInfolist};
 use weechat_relay_rs::Connection;
 
+pub fn print_register_url() -> Result<()> {
+    let slack_register_url = get_slack_register_url();
+    println!("To register a new slack workspace, first you need a workspace token. Please follow this link:");
+    println!();
+    println!("  {slack_register_url}");
+    println!();
+    println!("Then you need to register your token. You can use the following command: ");
+    println!();
+    println!("  register --token <TOKEN>");
+    Ok(())
+}
+
 pub fn register_slack_token(sys: &mut System, token: &String) -> Result<()> {
     if !is_weechat_running(sys) {
         spawn_weechat_process()?;
         sleep(2);
     }
 
-    let mut connection = init_connection("127.0.0.1:8000", "password")?;
+    let mut connection = init_connection()?;
     debug!("connection initiated");
 
-    println!("Checking installation...");
-    match check_python_wee_slack_installation(&mut connection)? {
-        true => {
-            debug!("wee_slack python plugin checked");
+    println!("Checking that wee-slack python plugin is loaded...");
+    debug!("connection initiated");
+    match check_connection_and_python_wee_slack_plugin(&mut connection)? {
+        (true, true) => {
+            debug!("wee-slack python plugin checked");
         }
-        false => {
-            debug!("wee_slack python plugin is currently not loaded");
-            println!("Missing wee_slack.py python script");
+        (true, false) => {
+            debug!("wee-slack python plugin is not loaded");
+            println!("Error : wee-slack python plugin is not loaded in weechat.");
+            println!("Did you correctly install wee_slack.py python script ?");
+            exit(1);
+        }
+        _ => {
+            debug!("A failure occured while connecting to weechat");
+            println!("Error : could not check if wee-slack python plugin is loaded in weechat.");
+            println!("Did you correctly configure the weechat-relay connection ?");
             exit(1);
         }
     };
@@ -51,7 +72,7 @@ pub fn register_slack_token(sys: &mut System, token: &String) -> Result<()> {
     spawn_weechat_process()?;
     sleep(2);
 
-    let mut connection = init_connection("127.0.0.1:8000", "password")?;
+    let mut connection = init_connection()?;
     debug!("connection initiated");
     send_infolist_buffer_request(&mut connection)?;
     let infolist = get_infolist_buffer_response(&mut connection)?;
@@ -88,7 +109,7 @@ pub fn list_registered_slack_teams(sys: &mut System) -> Result<()> {
         sleep(2);
     }
 
-    let mut connection = init_connection("127.0.0.1:8000", "password")?;
+    let mut connection = init_connection()?;
     debug!("connection initiated");
 
     send_infolist_buffer_request(&mut connection)?;
@@ -255,7 +276,7 @@ fn get_infolist_python_script_response(connection: &mut Connection) -> Result<Op
                 match &m.objects[0] {
                     Object::Inl(infolist) => Ok(Some(infolist.clone())),
                     _ => {
-                        info!("Could not parse the hotlist response");
+                        info!("Could not parse the infolist response");
                         Ok(None)
                     }
                 }
@@ -265,16 +286,19 @@ fn get_infolist_python_script_response(connection: &mut Connection) -> Result<Op
         }
         Err(e) => {
             debug!("{:?}", e);
-            info!("Could not receive the hotlist response");
+            info!("Could not receive the infolist response");
             Ok(None)
         }
     }
 }
 
-fn check_python_wee_slack_installation(connection: &mut Connection) -> Result<bool> {
+pub fn check_connection_and_python_wee_slack_plugin(
+    connection: &mut Connection,
+) -> Result<(bool, bool)> {
     send_infolist_python_script_request(connection)?;
     let infolist = get_infolist_python_script_response(connection)?;
 
+    let mut is_wee_slack_connection_ok = true;
     let mut is_python_wee_slack_installed = false;
     match infolist {
         Some(infolist) => {
@@ -294,8 +318,8 @@ fn check_python_wee_slack_installation(connection: &mut Connection) -> Result<bo
                 }
             }
         }
-        None => (),
+        None => is_wee_slack_connection_ok = false,
     }
 
-    Ok(is_python_wee_slack_installed)
+    Ok((is_wee_slack_connection_ok, is_python_wee_slack_installed))
 }
