@@ -83,7 +83,7 @@ pub fn register_slack_token(sys: &mut System, token: &String) -> Result<()> {
     if teams.len() != 0 {
         println!();
         println!(
-            "You got currently {} registered slack team(s) aka workspace(s) :",
+            "You have currently {} registered slack team(s) a.k.a workspace(s) :",
             teams.len()
         );
         for team in teams {
@@ -120,7 +120,7 @@ pub fn list_registered_slack_teams(sys: &mut System) -> Result<()> {
     if teams.len() != 0 {
         println!();
         println!(
-            "You got currently {} registered slack team(s) aka workspace(s) :",
+            "You have currently {} registered slack team(s) a.k.a workspace(s) :",
             teams.len()
         );
         for team in teams {
