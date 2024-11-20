@@ -25,9 +25,18 @@ fn main() {
     logger::set_logger(&cli);
 
     match cli.command {
-        cli::Commands::Hotlist { format, start } => {
-            fold(hotlist(&system, HotlistFlags { format, start }))
-        }
+        cli::Commands::Hotlist {
+            format,
+            start,
+            template,
+        } => fold(hotlist(
+            &system,
+            HotlistFlags {
+                format,
+                start,
+                template,
+            },
+        )),
         cli::Commands::Clear => fold(clear_hotlist(&system)),
         cli::Commands::Kill => fold(kill_weechat_processes(&mut system)),
         cli::Commands::ListTeams => fold(list_registered_slack_teams(&mut system)),

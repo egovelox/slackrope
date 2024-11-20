@@ -29,6 +29,10 @@ pub enum Commands {
         /// (when it's not running)
         #[arg(short, long, value_name = "START", action)]
         start: bool,
+        /// [default: none] use a template e.g "󰁥{{priority_1}} {{priority_2}} {{priority_3}}"
+        /// Note that you can use ANSI escape codes e.g "\e[38;5;208m󰁥\e[0m{{priority_1}}"
+        #[arg(short, long, value_name = "TEMPLATE", verbatim_doc_comment)]
+        template: Option<String>,
     },
     /// Clear the current hotlist (sets all counters to 0)
     Clear,
@@ -50,7 +54,7 @@ pub enum Commands {
 pub enum OutputFormat {
     /// Shell format: text
     Shell,
-    /// Shell format: text with icons
+    /// Simple format: json
     Simple,
     /// Detailed format: json
     Detailed,

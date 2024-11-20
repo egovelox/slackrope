@@ -16,48 +16,90 @@ use weechat_relay_rs::Connection;
 pub struct HotlistFlags {
     pub format: OutputFormat,
     pub start: bool,
+    pub template: Option<String>,
+}
+
+enum TemplatePriority {
+    Priority1,
+    Priority2,
+    Priority3,
+}
+
+impl TemplatePriority {
+    fn as_str(&self) -> &'static str {
+        match self {
+            TemplatePriority::Priority1 => "{{priority_1}}",
+            TemplatePriority::Priority2 => "{{priority_2}}",
+            TemplatePriority::Priority3 => "{{priority_3}}",
+        }
+    }
 }
 
 pub fn hotlist(sys: &System, flags: HotlistFlags) -> Result<()> {
     let is_weechat_running = is_weechat_running(sys);
-    match flags.format {
-        OutputFormat::Shell => {
+    match flags.template {
+        Some(template) => {
             if !is_weechat_running && !flags.start {
-                println!("-");
+                let output = apply_template(&template, "-", "-", "-");
+                println!("{output}");
                 return Ok(());
             }
-
             if !is_weechat_running && flags.start {
                 spawn_weechat_process()?;
                 sleep(2)
             }
-            print_shell_hotlist()?
+            let SimpleHotlist {
+                priority_1: p1,
+                priority_2: p2,
+                priority_3: p3,
+            } = get_simple_hotlist()?;
+            let output = apply_template(
+                &template,
+                &format!("{p1}"),
+                &format!("{p2}"),
+                &format!("{p3}"),
+            );
+            println!("{output}");
         }
-        OutputFormat::Simple => {
-            if !is_weechat_running && !flags.start {
-                println!("{{}}");
-                return Ok(());
-            }
+        None => match flags.format {
+            OutputFormat::Shell => {
+                if !is_weechat_running && !flags.start {
+                    println!("-");
+                    return Ok(());
+                }
 
-            if !is_weechat_running && flags.start {
-                spawn_weechat_process()?;
-                sleep(2)
+                if !is_weechat_running && flags.start {
+                    spawn_weechat_process()?;
+                    sleep(2)
+                }
+                print_shell_hotlist()?
             }
-            print_simple_hotlist()?
-        }
-        OutputFormat::Detailed => {
-            if !is_weechat_running && !flags.start {
-                println!("{{}}");
-                return Ok(());
-            }
+            OutputFormat::Simple => {
+                if !is_weechat_running && !flags.start {
+                    println!("{{}}");
+                    return Ok(());
+                }
 
-            if !is_weechat_running && flags.start {
-                spawn_weechat_process()?;
-                sleep(2)
+                if !is_weechat_running && flags.start {
+                    spawn_weechat_process()?;
+                    sleep(2)
+                }
+                print_simple_hotlist()?
             }
-            print_detailed_hotlist()?
-        }
-    };
+            OutputFormat::Detailed => {
+                if !is_weechat_running && !flags.start {
+                    println!("{{}}");
+                    return Ok(());
+                }
+
+                if !is_weechat_running && flags.start {
+                    spawn_weechat_process()?;
+                    sleep(2)
+                }
+                print_detailed_hotlist()?
+            }
+        },
+    }
     Ok(())
 }
 
@@ -73,15 +115,31 @@ pub fn clear_hotlist(sys: &System) -> Result<()> {
     Ok(())
 }
 
-fn print_shell_hotlist() -> Result<()> {
+fn apply_template(template: &str, priority_1: &str, priority_2: &str, priority_3: &str) -> String {
+    template
+        .to_string()
+        .replace(r"\e", "\x1b")
+        .replace(r"\033", "\x1b")
+        .replace(r"\u001b", "\x1b")
+        .replace(r"\x1b", "\x1b")
+        .replace(r"\x1B", "\x1b")
+        .replace(TemplatePriority::Priority1.as_str(), priority_1)
+        .replace(TemplatePriority::Priority2.as_str(), priority_2)
+        .replace(TemplatePriority::Priority3.as_str(), priority_3)
+}
+
+fn get_simple_hotlist() -> Result<SimpleHotlist> {
     let mut connection = init_connection()?;
     debug!("connection initiated");
     send_hotlist_request(&mut connection)?;
     debug!("hotlist request sent");
     let hotlist = get_hotlist_response(&mut connection)?;
     debug!("hotlist response received");
+    build_simple_hotlist(&hotlist)
+}
 
-    let simple_hotlist = build_simple_hotlist(&hotlist)?;
+fn print_shell_hotlist() -> Result<()> {
+    let simple_hotlist = get_simple_hotlist()?;
     println!(
         "{} {} {}",
         simple_hotlist.priority_1, simple_hotlist.priority_2, simple_hotlist.priority_3,
@@ -90,14 +148,7 @@ fn print_shell_hotlist() -> Result<()> {
 }
 
 fn print_simple_hotlist() -> Result<()> {
-    let mut connection = init_connection()?;
-    debug!("connection initiated");
-    send_hotlist_request(&mut connection)?;
-    debug!("hotlist request sent");
-    let hotlist = get_hotlist_response(&mut connection)?;
-    debug!("hotlist response received");
-
-    let simple_hotlist = build_simple_hotlist(&hotlist)?;
+    let simple_hotlist = get_simple_hotlist()?;
     let serialized = serde_json::to_string(&simple_hotlist).unwrap();
     println!("{}", serialized);
     Ok(())
