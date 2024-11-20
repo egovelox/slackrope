@@ -18,6 +18,8 @@ The `slackrope` CLI does a simple job : it connects to a running instance of `we
 ( or `weechat-headless` which runs as a daemon process )  
 and brings these hotlist counters back in your terminal.
 
+<img width="764" alt="slackrope_architecture" src="https://github.com/user-attachments/assets/5f10f791-93dc-4f99-ba07-f735717b300f">
+
 ## Example
 
 Let's imagine you are connected with 2 `slack` workspaces `A` and `B`, where you currently have :
