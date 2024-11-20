@@ -18,7 +18,7 @@ The `slackrope` CLI does a simple job : it connects to a running instance of `we
 ( or `weechat-headless` which runs as a daemon process )  
 and brings these hotlist counters back in your terminal.
 
-<img width="764" alt="slackrope_architecture" src="https://github.com/user-attachments/assets/5f10f791-93dc-4f99-ba07-f735717b300f">
+<img width="764" alt="slackrope_architecture" src="https://github.com/user-attachments/assets/0b6d5952-651e-4586-a6d3-d55c9b6b3f7a">
 
 ## Example
 
