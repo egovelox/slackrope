@@ -24,13 +24,13 @@ and brings these hotlist counters back in your terminal.
 
 Let's imagine you are connected with 2 `slack` workspaces `A` and `B`, where you currently have :
 
-- 1 unread message highlighting you with `@`
+- 2 unread messages in threads you've participated in
 - 0 unread private messages
-- 2 unread messages in slack threads
+- 1 unread message highlighting you with `@`
 
 ```console
 $ slackrope hotlist
-1 0 2
+2 0 1
 ```
 
 ```console
@@ -39,7 +39,8 @@ $ slackrope hotlist -f detailed
   "priority_1": {
     "count": 1,
     "items": [
-       "workspaceA.channelX",
+       "workspaceA.channelX.thread#1",
+       "workspaceB.channelY.thread#2"
     ]
   },
   "priority_2": {
@@ -49,8 +50,7 @@ $ slackrope hotlist -f detailed
   "priority_3": {
     "count": 2,
     "items": [
-       "workspaceA.channelX.thread#1",
-       "workspaceB.channelY.thread#2"
+       "workspaceA.channelX",
     ]
   }
 }
