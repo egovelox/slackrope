@@ -142,16 +142,15 @@ ln -s $HOME/.local/share/weechat/python/wee_slack.py $HOME/.local/share/weechat/
 # install this wee-slack required dependency ( installed on the brew python3, that weechat will use if you installed it with brew )
 /opt/homebrew/bin/python3 -m pip install --break-system-packages websocket-client
 
-# Option 1: install slackrope from crates.io
-cargo install slackrope
-
-# Option 2: clone this repo
+# Option 1: download the executable from a release of this github repository
+# Option 2: clone this repo and build your executable from source
 git clone https://github.com/egovelox/slackrope.git
 cd slackrope && cargo build --release
 cp ./target/release/slackrope $HOME/bin/slackrope
 
-# check slackrope health, but it should be ko the first time
-slackrope health
+# first check slackrope health, but it should indicate KO the first time, 
+# because you need more configuration
+slackrope -d -d health
 
 # ensure that all weechat instances are killed before further configuration
 slackrope kill
@@ -211,7 +210,11 @@ set -g status 2
 
 ## Releases
 
-> To do
+[Available Releases](https://github.com/egovelox/slackrope/releases)
+- `aarch64-apple-darwin`
+- `x86_64-apple-darwin`
+- `aarch64-unknown-linux-musl`
+- `x86_64-unknown-linux-musl`
 
 ## Acknowledgement
 
