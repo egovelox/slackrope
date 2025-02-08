@@ -2,7 +2,16 @@
 
 A simple [Rust](https://www.rust-lang.org/) CLI to get a [slack](https://slack.com/) hotlist.
 
-## What is a slack hotlist ?
+- [What is a slack hotlist](#what-is-a-slack-hotlist)
+- [Example](#example)
+- [Installation and configuration](#installation-and-configuration)
+- [Installation example](#installation-example)
+- [Notes](#notes)
+- [A way to use it within tmux](#a-way-to-use-it-within-tmux)
+- [Releases](#releases)
+- [Acknowledgement](#acknowledgement)
+
+## What is a slack hotlist
 
 A `hotlist` primarily is a feature available in [weechat](https://weechat.org/).  
 
@@ -124,7 +133,7 @@ This will setup for you the token in the corresponding `weechat` config file (se
 > `slackrope register --token **********`
 
 
-## Quick installation example on `macOS` with `brew`
+## Installation example
 
 Tested on MacOS Sequoia 15.3 :
 
@@ -174,7 +183,7 @@ slackrope register
 This command was meant to help, when your slackrope hotlist keeps indicating you unread messages, whereas you have in fact no unread messages in `slack`.
 Hopefully this should not happen very often.
 
-## My way to use it within `tmux`
+## A way to use it within tmux
 
 I mostly use `slackrope hotlist -t` inside `tmux` status-bar, with a 5 seconds refresh.
 
