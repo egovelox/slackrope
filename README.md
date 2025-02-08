@@ -179,12 +179,6 @@ Hopefully this should not happen very often.
 
 I mostly use `slackrope hotlist -t` inside `tmux` status-bar, with a 5 seconds refresh.
 
-First test :
-```bash
-slackrope hotlist -t "\033[38;5;208mP\e[0m{{priority_3}} \e[38;5;200mA\e[0m{{priority_2}} \e[38;5;112mT\e[0m{{priority_1}}"'
-```
-
-Then configure `tmux`:
 ```bash
 # $HOME/.tmux.conf
 %hidden DEFAULT="default"
@@ -195,9 +189,25 @@ Then configure `tmux`:
 
 %hidden HOTLIST='$HOME/bin/slackrope hotlist -t "\033[38;5;208m󰁥\e[0m{{priority_3}} \e[38;5;200m\e[0m{{priority_2}} \e[38;5;112m\e[0m{{priority_1}}"'
 
+set -g status-position bottom
 set -g status-interval 5
+# Span status line on 2 lines
+set -g status-format[0] ''
+set -g status-format[1] ''
+set -g status-right ''
+set -g status-left ''
+
+set -g status-right "#[fg=#{GREEN},bg=#{DEFAULT}] #S:#I "
 set -g status-left "#[fg=#{LIGHT_BLUE},bg=#{DEFAULT}]#(#{HOTLIST} | sed -r 's/\\[38;5;208m/#[fg=#{ORANGE}]/g' | sed -r 's/\\[38;5;200m/#[fg=#{MAGENTA}]/g' | sed -r 's/\\[38;5;112m/#[fg=#{GREEN}]/g' | sed -r 's/\\[0m/#[fg=#{LIGHT_BLUE}]/g') #[#{DEFAULT}]"
+set -gF status-format[0] '#{status-left}#[align=right]#{status-right}'
+
+# ...
+# Print both status lines
+set -g status 2
 ```
+
+<br>
+<img width="970" alt="slackrope_tmux" src="https://github.com/user-attachments/assets/35db4786-57d0-49ed-9ad5-a4c34b7074e3" />
 
 ## Releases
 
